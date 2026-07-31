@@ -193,7 +193,12 @@ def _parse_single_roster_item(item, is_staff: bool) -> dict:
     name_block = item.css_first(".team-roster-item-name")
     if name_block:
         full_name_text = _text(name_block)
-        stripped = full_name_text.replace(alias, "").replace(real_name, "").strip()
+        # count=1 on each: a plain .replace(alias, "") with no count strips every
+        # occurrence of the alias substring, including ones embedded inside the
+        # real name (e.g. alias "Thuy" inside real name "Ngoc-Thuy Duong"),
+        # corrupting the leftover text into a bogus "role" like "Ngoc- Duong"
+        # that then gets misread as a coaching title.
+        stripped = full_name_text.replace(alias, "", 1).replace(real_name, "", 1).strip()
         role = re.sub(r"\s+", " ", stripped).strip(" -/|")
 
     return {

@@ -6,7 +6,8 @@ from api.scrapers.teams import (
     vlr_team_matches,
     vlr_team_transactions,
 )
-from api.scrapers.teams.parsers import _extract_prize_from_text
+from api.scrapers.teams.parsers import _extract_prize_from_text, _parse_single_roster_item
+from utils.html_parsers import parse_html
 
 
 class FakeResponse:
@@ -40,6 +41,32 @@ class FakeAsyncClient:
 )
 def test_extract_prize_from_text_handles_concatenated_years(text, expected):
     assert _extract_prize_from_text(text) == expected
+
+
+def test_parse_single_roster_item_alias_substring_of_real_name():
+    """Regression test: when a player's alias is also a substring of their
+    real name (e.g. alias "Thuy" inside real name "Ngoc-Thuy Duong"), the
+    leftover-text role extraction must not strip every occurrence of the
+    alias — that corrupts the real name into a bogus role like "Ngoc- Duong",
+    which then gets misread elsewhere as a coaching title and excludes an
+    active player from the roster."""
+    html = parse_html(
+        '<div class="team-roster-item">'
+        '<a href="/player/41197/thuy">'
+        '<div class="team-roster-item-img"><img src="/img/avatar.png"></div>'
+        '<div class="team-roster-item-name">'
+        '<div class="team-roster-item-name-alias">Thuy</div>'
+        '<div class="team-roster-item-name-real">Ngoc-Thuy Duong</div>'
+        "</div>"
+        "</a>"
+        "</div>"
+    )
+    item = html.css_first(".team-roster-item")
+    player = _parse_single_roster_item(item, is_staff=False)
+
+    assert player["alias"] == "Thuy"
+    assert player["real_name"] == "Ngoc-Thuy Duong"
+    assert player["role"] == ""
 
 
 @pytest.mark.anyio
