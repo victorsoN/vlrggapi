@@ -106,3 +106,10 @@ STATS_MAP_IDS = {
     "icebox": "6",
     "pearl": "10",
 }
+
+# /stats minimum-sample filters, forwarded to vlr.gg as-is. Lowered from
+# vlr.gg's own defaults (200 rounds / 1550 = 1.55 rating) so the leaderboard
+# isn't restricted to only the highest-volume, highest-rated pros — still
+# filters out small/noisy samples, just with a lower bar.
+STATS_MIN_ROUNDS = 50
+STATS_MIN_RATING = 1050  # vlr.gg scales rating x1000 in this query param

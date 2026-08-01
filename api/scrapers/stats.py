@@ -4,7 +4,12 @@ import logging
 from fastapi import HTTPException
 
 from utils.cache_manager import cache_manager
-from utils.constants import CACHE_TTL_STATS, VLR_STATS_URL
+from utils.constants import (
+    CACHE_TTL_STATS,
+    STATS_MIN_RATING,
+    STATS_MIN_ROUNDS,
+    VLR_STATS_URL,
+)
 from utils.error_handling import (
     handle_scraper_errors,
     raise_for_upstream_status,
@@ -188,8 +193,8 @@ async def vlr_stats(region_key: str, timespan: str, map_key: str = "all"):
     async def build():
         base_url = (
             f"{VLR_STATS_URL}/?event_group_id=all&event_id=all"
-            f"&region={region_key}&country=all&min_rounds=200"
-            f"&min_rating=1550&agent=all&map_id={map_id}"
+            f"&region={region_key}&country=all&min_rounds={STATS_MIN_ROUNDS}"
+            f"&min_rating={STATS_MIN_RATING}&agent=all&map_id={map_id}"
         )
         url = (
             f"{base_url}&timespan=all"
