@@ -539,6 +539,25 @@ async def test_vlr_stats_forwards_map_id_in_url(monkeypatch):
 
 
 @pytest.mark.anyio
+async def test_vlr_stats_filters_rows_below_displayed_rating_floor(monkeypatch):
+    """vlr.gg's own min_rating filter is evaluated against a player's OVERALL
+    rating, not the per-map rating actually displayed once map_id narrows the
+    table — so a row can arrive from vlr.gg despite its displayed rating being
+    below the floor. Re-applied here against the displayed value itself."""
+    fetch = _install_fake_fetch(monkeypatch)
+    rows = (
+        _new_row(player="high", values={**NEW_ROW_VALUES, "rating2": "1.20"})
+        + _new_row(player="borderline", values={**NEW_ROW_VALUES, "rating2": "1.00"})
+        + _new_row(player="low", values={**NEW_ROW_VALUES, "rating2": "0.95"})
+    )
+    fetch.page_for_region = lambda region: make_stats_page(selected=region, rows=rows)
+
+    data = await vlr_stats("americas", "60", "ascent")
+
+    assert [s["player"] for s in data["data"]["segments"]] == ["high", "borderline"]
+
+
+@pytest.mark.anyio
 async def test_vlr_stats_cache_key_differs_by_map(monkeypatch):
     fetch = _install_fake_fetch(monkeypatch)
 

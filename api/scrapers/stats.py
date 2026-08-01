@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from utils.cache_manager import cache_manager
 from utils.constants import (
     CACHE_TTL_STATS,
+    STATS_MIN_DISPLAYED_RATING,
     STATS_MIN_RATING,
     STATS_MIN_ROUNDS,
     VLR_STATS_URL,
@@ -253,8 +254,15 @@ async def vlr_stats(region_key: str, timespan: str, map_key: str = "all"):
         result = []
         for item in html.css("tbody tr"):
             parsed = _parse_stats_row(item, col_map)
-            if parsed["player"]:
-                result.append(parsed)
+            if not parsed["player"]:
+                continue
+            try:
+                displayed_rating = float(parsed["rating"])
+            except (TypeError, ValueError):
+                continue
+            if displayed_rating < STATS_MIN_DISPLAYED_RATING:
+                continue
+            result.append(parsed)
 
         return {"data": {"status": status, "segments": result}}
 
