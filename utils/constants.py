@@ -24,8 +24,13 @@ MAX_PAGE_LIMIT = 100
 MIN_PAGE_LIMIT = 1
 
 # Request settings
-DEFAULT_TIMEOUT = 30
-DEFAULT_RETRIES = 3
+# A single scrape used to be able to take up to ~90s worst case (3 retries x
+# 30s timeout + backoff) before returning anything — well past Vercel's own
+# function execution ceiling, so the platform kills the invocation mid-flight
+# and the client just sees a dropped connection with no error at all. Tightened
+# so a slow/unresponsive vlr.gg fails fast (~17s worst case) instead of hanging.
+DEFAULT_TIMEOUT = 8
+DEFAULT_RETRIES = 2
 DEFAULT_REQUEST_DELAY = 1.0
 MIN_RESPONSE_SIZE = 100
 
