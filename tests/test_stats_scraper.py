@@ -421,9 +421,15 @@ async def test_alias_normalizes_before_cache_key(monkeypatch):
     await vlr_stats("na", "60")
 
     # cache entry is keyed on the canonical region, not the alias (and includes
-    # the resolved map_id — "all" here, since map_key defaults to "all")
-    assert cache_manager.get(stats_mod.CACHE_TTL_STATS, "stats", "americas", "60", "all") is not None
-    assert cache_manager.get(stats_mod.CACHE_TTL_STATS, "stats", "na", "60", "all") is None
+    # the resolved map_id and default min_rounds/min_rating)
+    assert cache_manager.get(
+        stats_mod.CACHE_TTL_STATS, "stats", "americas", "60", "all",
+        stats_mod.STATS_MIN_ROUNDS, stats_mod.STATS_MIN_RATING,
+    ) is not None
+    assert cache_manager.get(
+        stats_mod.CACHE_TTL_STATS, "stats", "na", "60", "all",
+        stats_mod.STATS_MIN_ROUNDS, stats_mod.STATS_MIN_RATING,
+    ) is None
     # the fetched URL carries the canonical region
     data_calls = [c for c in fetch.calls if _region_of(c) is not None]
     assert "region=americas" in data_calls[0]
@@ -550,6 +556,34 @@ async def test_vlr_stats_forwards_map_id_in_url(monkeypatch):
 
 
 @pytest.mark.anyio
+async def test_vlr_stats_forwards_min_rounds_and_min_rating_overrides(monkeypatch):
+    fetch = _install_fake_fetch(monkeypatch)
+
+    await vlr_stats("americas", "60", "ascent", min_rounds=1, min_rating=0)
+
+    data_calls = [c for c in fetch.calls if _region_of(c) is not None]
+    assert "min_rounds=1" in data_calls[0]
+    assert "min_rating=0" in data_calls[0]
+
+
+@pytest.mark.anyio
+async def test_vlr_stats_min_rating_override_changes_which_rows_survive(monkeypatch):
+    """A caller building a team roster (e.g.) needs weaker players too — an
+    explicit min_rating=0 should let rows the default floor would drop
+    through, not just narrow vlr.gg's own pre-filter."""
+    fetch = _install_fake_fetch(monkeypatch)
+    rows = (
+        _new_row(player="high", values={**NEW_ROW_VALUES, "rating2": "1.20"})
+        + _new_row(player="low", values={**NEW_ROW_VALUES, "rating2": "0.60"})
+    )
+    fetch.page_for_region = lambda region: make_stats_page(selected=region, rows=rows)
+
+    data = await vlr_stats("americas", "60", "ascent", min_rounds=1, min_rating=0)
+
+    assert [s["player"] for s in data["data"]["segments"]] == ["high", "low"]
+
+
+@pytest.mark.anyio
 async def test_vlr_stats_filters_rows_below_displayed_rating_floor(monkeypatch):
     """vlr.gg's own min_rating filter is evaluated against a player's OVERALL
     rating, not the per-map rating actually displayed once map_id narrows the
@@ -578,5 +612,11 @@ async def test_vlr_stats_cache_key_differs_by_map(monkeypatch):
     # same region/timespan, different map -> both fetched, distinct cache entries
     data_calls = [c for c in fetch.calls if _region_of(c) is not None]
     assert len(data_calls) == 2
-    assert cache_manager.get(stats_mod.CACHE_TTL_STATS, "stats", "americas", "60", "5") is not None
-    assert cache_manager.get(stats_mod.CACHE_TTL_STATS, "stats", "americas", "60", "8") is not None
+    assert cache_manager.get(
+        stats_mod.CACHE_TTL_STATS, "stats", "americas", "60", "5",
+        stats_mod.STATS_MIN_ROUNDS, stats_mod.STATS_MIN_RATING,
+    ) is not None
+    assert cache_manager.get(
+        stats_mod.CACHE_TTL_STATS, "stats", "americas", "60", "8",
+        stats_mod.STATS_MIN_ROUNDS, stats_mod.STATS_MIN_RATING,
+    ) is not None
