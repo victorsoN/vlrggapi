@@ -222,6 +222,8 @@ def test_parse_stats_row_new_markup_header_keyed():
     assert parsed["maps_played"] == "11"
     assert parsed["kills"] == "180"
     assert parsed["deaths"] == "150"
+    assert parsed["first_kills"] == "25"
+    assert parsed["first_deaths"] == "20"
 
 
 def test_build_column_map_keys_align_with_td_positions():
@@ -298,6 +300,8 @@ async def test_vlr_stats_new_markup_end_to_end(monkeypatch):
     assert seg[0]["maps_played"] == "11"
     assert seg[0]["kills"] == "180"
     assert seg[0]["deaths"] == "150"
+    assert seg[0]["first_kills"] == "25"
+    assert seg[0]["first_deaths"] == "20"
     # output key set is unchanged from upstream's contract
     assert set(seg[0].keys()) == {
         "player", "org", "agents", "rounds_played", "rating",
@@ -305,7 +309,7 @@ async def test_vlr_stats_new_markup_end_to_end(monkeypatch):
         "average_damage_per_round", "kills_per_round", "assists_per_round",
         "first_kills_per_round", "first_deaths_per_round", "headshot_percentage",
         "clutch_success_percentage", "clutch_attempts", "maps_played",
-        "kills", "deaths",
+        "kills", "deaths", "first_kills", "first_deaths",
     }
     # prime fired first, exactly once, before the data fetch
     assert _region_of(fetch.calls[0]) is None
