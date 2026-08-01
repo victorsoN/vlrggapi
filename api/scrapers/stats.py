@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 # fixed here has broken this scraper three times (upstream issues #4 and #14, both
 # "vlr.gg added a column", each re-hardcoded to the new numbers).
 _STATS_FIELD_MAP = {
+    "maps": "maps_played",
     "rnd": "rounds_played",
     "rating2": "rating",
     "acs": "average_combat_score",
@@ -42,6 +43,8 @@ _STATS_FIELD_MAP = {
     "hsp": "headshot_percentage",
     "clp": "clutch_success_percentage",
     "cl": "clutch_attempts",
+    "k": "kills",
+    "d": "deaths",
 }
 
 # If <thead> is keyed (>=1 data-col) but any of these is absent, the layout changed

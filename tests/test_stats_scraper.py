@@ -217,8 +217,11 @@ def test_parse_stats_row_new_markup_header_keyed():
     assert parsed["org"] == "NRG"
     # clutch_attempts must come from the ``cl`` key, not a positional index.
     assert parsed["clutch_attempts"] == "7/35"
-    # the inserted ``maps`` column must NOT leak into rounds_played.
+    # the ``maps`` column is its own field, not a leak into rounds_played.
     assert parsed["rounds_played"] != "11"
+    assert parsed["maps_played"] == "11"
+    assert parsed["kills"] == "180"
+    assert parsed["deaths"] == "150"
 
 
 def test_build_column_map_keys_align_with_td_positions():
@@ -292,13 +295,17 @@ async def test_vlr_stats_new_markup_end_to_end(monkeypatch):
     assert seg[0]["average_combat_score"] == "247"
     assert seg[0]["org"] == "NRG"
     assert seg[0]["clutch_attempts"] == "7/35"
+    assert seg[0]["maps_played"] == "11"
+    assert seg[0]["kills"] == "180"
+    assert seg[0]["deaths"] == "150"
     # output key set is unchanged from upstream's contract
     assert set(seg[0].keys()) == {
         "player", "org", "agents", "rounds_played", "rating",
         "average_combat_score", "kill_deaths", "kill_assists_survived_traded",
         "average_damage_per_round", "kills_per_round", "assists_per_round",
         "first_kills_per_round", "first_deaths_per_round", "headshot_percentage",
-        "clutch_success_percentage", "clutch_attempts",
+        "clutch_success_percentage", "clutch_attempts", "maps_played",
+        "kills", "deaths",
     }
     # prime fired first, exactly once, before the data fetch
     assert _region_of(fetch.calls[0]) is None
