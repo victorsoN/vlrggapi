@@ -45,6 +45,8 @@ _STATS_FIELD_MAP = {
     "cl": "clutch_attempts",
     "k": "kills",
     "d": "deaths",
+    "fk": "first_kills",
+    "fd": "first_deaths",
 }
 
 # If <thead> is keyed (>=1 data-col) but any of these is absent, the layout changed
