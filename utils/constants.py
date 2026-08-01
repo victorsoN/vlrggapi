@@ -24,8 +24,13 @@ MAX_PAGE_LIMIT = 100
 MIN_PAGE_LIMIT = 1
 
 # Request settings
-DEFAULT_TIMEOUT = 30
-DEFAULT_RETRIES = 3
+# A single scrape used to be able to take up to ~90s worst case (3 retries x
+# 30s timeout + backoff) before returning anything — well past Vercel's own
+# function execution ceiling, so the platform kills the invocation mid-flight
+# and the client just sees a dropped connection with no error at all. Tightened
+# so a slow/unresponsive vlr.gg fails fast (~17s worst case) instead of hanging.
+DEFAULT_TIMEOUT = 8
+DEFAULT_RETRIES = 2
 DEFAULT_REQUEST_DELAY = 1.0
 MIN_RESPONSE_SIZE = 100
 
@@ -33,8 +38,14 @@ MIN_RESPONSE_SIZE = 100
 PAGINATION_SEMAPHORE_LIMIT = 4
 
 # Circuit breaker
-CIRCUIT_FAIL_MAX = 5
-CIRCUIT_RESET_TIMEOUT = 30.0
+# All vlr.gg requests share one circuit (keyed by host only), so a burst of
+# concurrent scrapes (e.g. a map win-rate fan-out hitting /match/details ~15-30
+# times at once) can rack up 5 failures within the same window even though each
+# call already retried internally. Raised the threshold and shortened the
+# reset window so a short concurrent blip doesn't blanket-503 every endpoint
+# for a full 30s.
+CIRCUIT_FAIL_MAX = 10
+CIRCUIT_RESET_TIMEOUT = 15.0
 
 # Request hardening limits for expensive paginated scrapes
 MAX_MATCH_PAGE_WINDOW = 20
