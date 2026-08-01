@@ -25,4 +25,4 @@ EXPOSE 3001
 
 CMD ["python", "main.py"]
 HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 \
-  CMD python -c "import urllib.request, json; r = urllib.request.urlopen('http://127.0.0.1:3001/v2/health', timeout=3); assert json.loads(r.read())['status'] == 'success'"
+  CMD python -c "import os, urllib.request, json; port = os.environ.get('PORT', '3001'); r = urllib.request.urlopen(f'http://127.0.0.1:{port}/v2/health', timeout=3); assert json.loads(r.read())['status'] == 'success'"

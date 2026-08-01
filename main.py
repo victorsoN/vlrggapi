@@ -1,4 +1,5 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -49,4 +50,8 @@ def version():
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=API_PORT)
+    # Most PaaS hosts (Render, Heroku, etc.) assign the listen port at runtime
+    # via $PORT rather than letting you hardcode one — fall back to API_PORT
+    # for local/Docker Compose use where nothing sets it.
+    port = int(os.environ.get("PORT", API_PORT))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
