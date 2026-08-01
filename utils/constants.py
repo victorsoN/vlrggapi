@@ -86,3 +86,23 @@ CACHE_TTL_HEALTH_UPSTREAM = 60
 # silently falls back to "all". Kept separate from utils.utils.region (the
 # /rankings contract) so /rankings?region=americas still returns 400.
 STATS_REGIONS = frozenset({"all", "americas", "emea", "pacific", "china", "intl"})
+
+# /stats map filter uses vlr.gg's internal numeric map_id, not the map name —
+# scraped directly from <select name="map_id"> on the stats page itself (these
+# are stable per-map ids, not derived from any pattern). API consumers pass a
+# lowercase map name instead; this is the name -> id translation table.
+STATS_MAP_IDS = {
+    "ascent": "5",
+    "breeze": "8",
+    "haven": "2",
+    "lotus": "11",
+    "split": "3",
+    "summit": "16",
+    "sunset": "12",
+    "abyss": "13",
+    "bind": "1",
+    "corrode": "14",
+    "fracture": "9",
+    "icebox": "6",
+    "pearl": "10",
+}

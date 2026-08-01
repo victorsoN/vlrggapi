@@ -409,9 +409,10 @@ async def test_alias_normalizes_before_cache_key(monkeypatch):
 
     await vlr_stats("na", "60")
 
-    # cache entry is keyed on the canonical region, not the alias
-    assert cache_manager.get(stats_mod.CACHE_TTL_STATS, "stats", "americas", "60") is not None
-    assert cache_manager.get(stats_mod.CACHE_TTL_STATS, "stats", "na", "60") is None
+    # cache entry is keyed on the canonical region, not the alias (and includes
+    # the resolved map_id — "all" here, since map_key defaults to "all")
+    assert cache_manager.get(stats_mod.CACHE_TTL_STATS, "stats", "americas", "60", "all") is not None
+    assert cache_manager.get(stats_mod.CACHE_TTL_STATS, "stats", "na", "60", "all") is None
     # the fetched URL carries the canonical region
     data_calls = [c for c in fetch.calls if _region_of(c) is not None]
     assert "region=americas" in data_calls[0]
@@ -496,3 +497,56 @@ def test_rankings_region_americas_still_400():
     with pytest.raises(HTTPException) as exc:
         validate_region("americas")
     assert exc.value.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Map filter
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize(
+    ("name", "map_id"),
+    [("all", "all"), ("ascent", "5"), ("breeze", "8"), ("haven", "2"),
+     ("lotus", "11"), ("split", "3"), ("summit", "16"), ("sunset", "12"),
+     ("ASCENT", "5")],  # case-insensitive
+)
+def test_validate_stats_map_accepts_known_maps(name, map_id):
+    from utils.error_handling import validate_stats_map
+    assert validate_stats_map(name) == map_id
+
+
+@pytest.mark.parametrize("value", ["nonexistent", "abyss2", "xyz"])
+def test_validate_stats_map_rejects_unknown(value):
+    from utils.error_handling import validate_stats_map
+    with pytest.raises(HTTPException) as exc:
+        validate_stats_map(value)
+    assert exc.value.status_code == 400
+
+
+def test_validate_stats_map_defaults_to_all_when_absent():
+    from utils.error_handling import validate_stats_map
+    assert validate_stats_map(None) == "all"
+    assert validate_stats_map("") == "all"
+
+
+@pytest.mark.anyio
+async def test_vlr_stats_forwards_map_id_in_url(monkeypatch):
+    fetch = _install_fake_fetch(monkeypatch)
+
+    await vlr_stats("americas", "60", "ascent")
+
+    data_calls = [c for c in fetch.calls if _region_of(c) is not None]
+    assert "map_id=5" in data_calls[0]
+
+
+@pytest.mark.anyio
+async def test_vlr_stats_cache_key_differs_by_map(monkeypatch):
+    fetch = _install_fake_fetch(monkeypatch)
+
+    await vlr_stats("americas", "60", "ascent")
+    await vlr_stats("americas", "60", "breeze")
+
+    # same region/timespan, different map -> both fetched, distinct cache entries
+    data_calls = [c for c in fetch.calls if _region_of(c) is not None]
+    assert len(data_calls) == 2
+    assert cache_manager.get(stats_mod.CACHE_TTL_STATS, "stats", "americas", "60", "5") is not None
+    assert cache_manager.get(stats_mod.CACHE_TTL_STATS, "stats", "americas", "60", "8") is not None
