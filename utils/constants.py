@@ -113,3 +113,10 @@ STATS_MAP_IDS = {
 # filters out small/noisy samples, just with a lower bar.
 STATS_MIN_ROUNDS = 50
 STATS_MIN_RATING = 1050  # vlr.gg scales rating x1000 in this query param
+
+# vlr.gg's own min_rating filter is evaluated against the player's OVERALL
+# rating for the region/timespan, not the per-map rating actually displayed
+# once map_id narrows the table — so map-filtered results can (and do) include
+# rows well below STATS_MIN_RATING. Re-applied here against the displayed
+# rating value itself so the floor holds for whatever's actually shown.
+STATS_MIN_DISPLAYED_RATING = 1.00
