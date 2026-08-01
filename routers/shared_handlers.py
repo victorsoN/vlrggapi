@@ -50,8 +50,8 @@ async def get_news_data() -> dict:
     return await vlr_news()
 
 
-async def get_stats_data(region: str, timespan: str) -> dict:
-    return await vlr_stats(region, timespan)
+async def get_stats_data(region: str, timespan: str, map: str = "all") -> dict:
+    return await vlr_stats(region, timespan, map)
 
 
 async def get_rankings_data(region: str) -> dict:

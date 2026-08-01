@@ -12,6 +12,7 @@ from utils.constants import (
     MAX_MATCH_PAGE_WINDOW,
     MAX_MATCH_RETRIES,
     MAX_MATCH_TIMEOUT,
+    STATS_MAP_IDS,
     STATS_REGIONS,
 )
 from utils.http_client import CircuitOpenError
@@ -139,6 +140,27 @@ def validate_timespan(ts: str):
             status_code=400,
             detail=f"Invalid timespan '{ts}'. Valid values: {', '.join(sorted(VALID_TIMESPANS))}",
         )
+
+
+def validate_stats_map(key: str) -> str:
+    """Validate a /stats map name and resolve it to vlr.gg's internal map_id.
+
+    Accepts "all" or a lowercase map name (ascent, breeze, ...) — raises 400 on
+    anything else rather than silently falling back to "all" results, which is
+    what vlr.gg itself does for an unrecognized map_id.
+    """
+    normalized = (key or "all").strip().lower()
+    if normalized == "all":
+        return "all"
+    if normalized not in STATS_MAP_IDS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Invalid map '{key}'. Valid values: all, "
+                f"{', '.join(sorted(STATS_MAP_IDS))}"
+            ),
+        )
+    return STATS_MAP_IDS[normalized]
 
 
 def validate_match_query(q: str):

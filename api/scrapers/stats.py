@@ -8,6 +8,7 @@ from utils.constants import CACHE_TTL_STATS, VLR_STATS_URL
 from utils.error_handling import (
     handle_scraper_errors,
     raise_for_upstream_status,
+    validate_stats_map,
     validate_stats_region,
     validate_timespan,
 )
@@ -177,17 +178,18 @@ async def _prime_session(client, *, force: bool = False) -> None:
 
 
 @handle_scraper_errors
-async def vlr_stats(region_key: str, timespan: str):
+async def vlr_stats(region_key: str, timespan: str, map_key: str = "all"):
     # Normalize alias -> canonical BEFORE the cache key is formed so na and americas
     # resolve to one entry, and validate up front so bad input fails without a fetch.
     region_key = validate_stats_region(region_key)
     validate_timespan(timespan)
+    map_id = validate_stats_map(map_key)
 
     async def build():
         base_url = (
             f"{VLR_STATS_URL}/?event_group_id=all&event_id=all"
             f"&region={region_key}&country=all&min_rounds=200"
-            f"&min_rating=1550&agent=all&map_id=all"
+            f"&min_rating=1550&agent=all&map_id={map_id}"
         )
         url = (
             f"{base_url}&timespan=all"
@@ -252,5 +254,5 @@ async def vlr_stats(region_key: str, timespan: str):
         return {"data": {"status": status, "segments": result}}
 
     return await cache_manager.get_or_create_async(
-        CACHE_TTL_STATS, build, "stats", region_key, timespan
+        CACHE_TTL_STATS, build, "stats", region_key, timespan, map_id
     )
