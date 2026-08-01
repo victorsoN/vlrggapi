@@ -24,6 +24,7 @@ from api.scrapers import (
     vlr_upcoming_matches,
     vlr_upcoming_matches_extended,
 )
+from utils.constants import STATS_MIN_RATING, STATS_MIN_ROUNDS
 
 
 def _validate_non_paginated_match_query(
@@ -50,8 +51,14 @@ async def get_news_data() -> dict:
     return await vlr_news()
 
 
-async def get_stats_data(region: str, timespan: str, map: str = "all") -> dict:
-    return await vlr_stats(region, timespan, map)
+async def get_stats_data(
+    region: str,
+    timespan: str,
+    map: str = "all",
+    min_rounds: int = STATS_MIN_ROUNDS,
+    min_rating: float = STATS_MIN_RATING,
+) -> dict:
+    return await vlr_stats(region, timespan, map, min_rounds, min_rating)
 
 
 async def get_rankings_data(region: str) -> dict:

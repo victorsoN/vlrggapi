@@ -107,16 +107,17 @@ STATS_MAP_IDS = {
     "pearl": "10",
 }
 
-# /stats minimum-sample filters, forwarded to vlr.gg as-is. Lowered from
-# vlr.gg's own defaults (200 rounds / 1550 = 1.55 rating) so the leaderboard
-# isn't restricted to only the highest-volume, highest-rated pros — still
-# filters out small/noisy samples, just with a lower bar.
+# /stats minimum-sample filter defaults. Lowered from vlr.gg's own defaults
+# (200 rounds / 1.55 rating) so the leaderboard isn't restricted to only the
+# highest-volume, highest-rated pros — still filters out small/noisy samples,
+# just with a lower bar. Both are overridable per-request (e.g. team-aggregate
+# views want the full roster, not just players clearing a player-leaderboard
+# bar) — these are only the defaults when a caller doesn't specify one.
 STATS_MIN_ROUNDS = 50
-STATS_MIN_RATING = 1050  # vlr.gg scales rating x1000 in this query param
-
-# vlr.gg's own min_rating filter is evaluated against the player's OVERALL
-# rating for the region/timespan, not the per-map rating actually displayed
-# once map_id narrows the table — so map-filtered results can (and do) include
-# rows well below STATS_MIN_RATING. Re-applied here against the displayed
-# rating value itself so the floor holds for whatever's actually shown.
-STATS_MIN_DISPLAYED_RATING = 1.00
+# Human-scale (not vlr.gg's x1000 query-param scale). Sent to vlr.gg as a
+# pre-filter, but ALSO re-applied ourselves against the displayed rating
+# value: vlr.gg's own min_rating filter is evaluated against a player's
+# OVERALL rating for the region/timespan, not the per-map rating actually
+# displayed once map_id narrows the table — so map-filtered results can (and
+# do) include rows below this floor if only vlr.gg's own filter were trusted.
+STATS_MIN_RATING = 1.00

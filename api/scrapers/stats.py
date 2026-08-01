@@ -6,7 +6,6 @@ from fastapi import HTTPException
 from utils.cache_manager import cache_manager
 from utils.constants import (
     CACHE_TTL_STATS,
-    STATS_MIN_DISPLAYED_RATING,
     STATS_MIN_RATING,
     STATS_MIN_ROUNDS,
     VLR_STATS_URL,
@@ -189,18 +188,26 @@ async def _prime_session(client, *, force: bool = False) -> None:
 
 
 @handle_scraper_errors
-async def vlr_stats(region_key: str, timespan: str, map_key: str = "all"):
+async def vlr_stats(
+    region_key: str,
+    timespan: str,
+    map_key: str = "all",
+    min_rounds: int = STATS_MIN_ROUNDS,
+    min_rating: float = STATS_MIN_RATING,
+):
     # Normalize alias -> canonical BEFORE the cache key is formed so na and americas
     # resolve to one entry, and validate up front so bad input fails without a fetch.
     region_key = validate_stats_region(region_key)
     validate_timespan(timespan)
     map_id = validate_stats_map(map_key)
+    min_rounds = max(0, min_rounds)
+    min_rating = max(0.0, min_rating)
 
     async def build():
         base_url = (
             f"{VLR_STATS_URL}/?event_group_id=all&event_id=all"
-            f"&region={region_key}&country=all&min_rounds={STATS_MIN_ROUNDS}"
-            f"&min_rating={STATS_MIN_RATING}&agent=all&map_id={map_id}"
+            f"&region={region_key}&country=all&min_rounds={min_rounds}"
+            f"&min_rating={int(min_rating * 1000)}&agent=all&map_id={map_id}"
         )
         url = (
             f"{base_url}&timespan=all"
@@ -265,12 +272,12 @@ async def vlr_stats(region_key: str, timespan: str, map_key: str = "all"):
                 displayed_rating = float(parsed["rating"])
             except (TypeError, ValueError):
                 continue
-            if displayed_rating < STATS_MIN_DISPLAYED_RATING:
+            if displayed_rating < min_rating:
                 continue
             result.append(parsed)
 
         return {"data": {"status": status, "segments": result}}
 
     return await cache_manager.get_or_create_async(
-        CACHE_TTL_STATS, build, "stats", region_key, timespan, map_id
+        CACHE_TTL_STATS, build, "stats", region_key, timespan, map_id, min_rounds, min_rating
     )

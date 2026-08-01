@@ -22,7 +22,7 @@ from routers.shared_handlers import (
     get_team_stats_data,
     get_team_transactions_data,
 )
-from utils.constants import MAX_MATCH_QUERY_BOUND
+from utils.constants import MAX_MATCH_QUERY_BOUND, STATS_MIN_RATING, STATS_MIN_ROUNDS
 from utils.error_handling import (
     validate_event_query,
     validate_id_param,
@@ -62,8 +62,10 @@ async def v2_stats(
     region: str = Query(..., description="Region: all, americas, emea, pacific, china, intl (deprecated aliases: na/br -> americas, eu -> emea, ap/kr/jp/oce -> pacific, cn -> china)"),
     timespan: str = Query(..., description="Timespan: 30, 60, 90, or all"),
     map: str = Query("all", description="Map: all, ascent, breeze, haven, lotus, split, summit, sunset, abyss, bind, corrode, fracture, icebox, pearl"),
+    min_rounds: int = Query(STATS_MIN_ROUNDS, ge=0, description="Minimum rounds played to appear in results (default 50) — lower this for a fuller roster, e.g. team-level aggregation."),
+    min_rating: float = Query(STATS_MIN_RATING, ge=0, description="Minimum rating to appear in results (default 1.0)."),
 ):
-    result = await get_stats_data(region, timespan, map)
+    result = await get_stats_data(region, timespan, map, min_rounds, min_rating)
     return _wrap_v2(result)
 
 
