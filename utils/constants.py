@@ -33,8 +33,14 @@ MIN_RESPONSE_SIZE = 100
 PAGINATION_SEMAPHORE_LIMIT = 4
 
 # Circuit breaker
-CIRCUIT_FAIL_MAX = 5
-CIRCUIT_RESET_TIMEOUT = 30.0
+# All vlr.gg requests share one circuit (keyed by host only), so a burst of
+# concurrent scrapes (e.g. a map win-rate fan-out hitting /match/details ~15-30
+# times at once) can rack up 5 failures within the same window even though each
+# call already retried internally. Raised the threshold and shortened the
+# reset window so a short concurrent blip doesn't blanket-503 every endpoint
+# for a full 30s.
+CIRCUIT_FAIL_MAX = 10
+CIRCUIT_RESET_TIMEOUT = 15.0
 
 # Request hardening limits for expensive paginated scrapes
 MAX_MATCH_PAGE_WINDOW = 20
