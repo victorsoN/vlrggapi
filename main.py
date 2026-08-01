@@ -32,13 +32,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Starlette wraps middleware in reverse registration order, so whichever is
+# added last ends up outermost. RateLimitMiddleware must be added first (and
+# so end up innermost) so CORSMiddleware still wraps its short-circuited 429
+# responses — otherwise a rate-limited response has no CORS headers at all,
+# and browsers report it as an opaque network failure instead of a
+# catchable 429 with Retry-After.
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(RateLimitMiddleware)
 
 app.include_router(vlr_router)
 app.include_router(v2_router)
