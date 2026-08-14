@@ -466,6 +466,74 @@ def _parse_rounds(game_elem) -> list[dict]:
                 "side": winning_side,
             })
 
+    # How a round ended is recorded by vlr.gg only as the icon inside the winning
+# square -- /img/vlr/game/round/{elim,boom,defuse,time}.webp. There is no text
+# or data attribute carrying it anywhere else on the page.
+_ROUND_METHODS = frozenset({"elim", "boom", "defuse", "time"})
+
+
+def _parse_round_method(sq) -> str:
+    """
+    Map a winning round square's icon to how that round was won.
+
+    Returns "" when there is no icon (an unplayed padding column) or when the
+    icon is one vlr.gg has added since -- callers treat both as "unknown"
+    rather than guessing.
+    """
+    img = sq.css_first("img")
+    if not img:
+        return ""
+    src = img.attributes.get("src") or ""
+    name = src.rsplit("/", 1)[-1].rsplit(".", 1)[0]
+    return name if name in _ROUND_METHODS else ""
+
+
+def _parse_rounds(game_elem) -> list[dict]:
+    """
+    Parse round-by-round outcomes from a .vlr-rounds container.
+    """
+    rounds: list[dict] = []
+    rounds_container = game_elem.css_first(".vlr-rounds")
+    if not rounds_container:
+        return rounds
+
+    round_num = 0
+    for row in rounds_container.css(".vlr-rounds-row"):
+        for col in row.css(".vlr-rounds-row-col"):
+            cls = col.attributes.get("class", "")
+            if "mod-spacing" in cls:
+                continue
+
+            sqs = col.css(".rnd-sq")
+            if not sqs:
+                continue
+
+            round_num += 1
+
+            winner = ""
+            winning_side = ""
+            method = ""
+            for idx, sq in enumerate(sqs):
+                sq_cls = sq.attributes.get("class", "")
+                if "mod-win" in sq_cls:
+                    winner = "team1" if idx == 0 else "team2"
+                    if "mod-ct" in sq_cls:
+                        winning_side = "ct"
+                    elif "mod-t" in sq_cls:
+                        winning_side = "t"
+                    method = _parse_round_method(sq)
+                    break
+
+            rounds.append({
+                "round_num": round_num,
+                "winner": winner,
+                "side": winning_side,
+                "method": method,
+            })
+
+    return rounds
+
+    
     return rounds
 
 
