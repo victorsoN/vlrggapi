@@ -194,6 +194,7 @@ async def vlr_stats(
     map_key: str = "all",
     min_rounds: int = STATS_MIN_ROUNDS,
     min_rating: float = STATS_MIN_RATING,
+    event_id: str | None = None,
 ):
     # Normalize alias -> canonical BEFORE the cache key is formed so na and americas
     # resolve to one entry, and validate up front so bad input fails without a fetch.
@@ -204,8 +205,9 @@ async def vlr_stats(
     min_rating = max(0.0, min_rating)
 
     async def build():
+        resolved_event_id = event_id if event_id else "all"
         base_url = (
-            f"{VLR_STATS_URL}/?event_group_id=all&event_id=all"
+            f"{VLR_STATS_URL}/?event_group_id=all&event_id={resolved_event_id}"
             f"&region={region_key}&country=all&min_rounds={min_rounds}"
             f"&min_rating={int(min_rating * 1000)}&agent=all&map_id={map_id}"
         )
@@ -279,5 +281,13 @@ async def vlr_stats(
         return {"data": {"status": status, "segments": result}}
 
     return await cache_manager.get_or_create_async(
-        CACHE_TTL_STATS, build, "stats", region_key, timespan, map_id, min_rounds, min_rating
+        CACHE_TTL_STATS,
+        build,
+        "stats",
+        region_key,
+        timespan,
+        map_id,
+        min_rounds,
+        min_rating,
+        event_id or "all",
     )

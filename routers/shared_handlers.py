@@ -19,6 +19,8 @@ from api.scrapers import (
     vlr_stats,
     vlr_team,
     vlr_team_matches,
+    vlr_team_roster,
+    vlr_team_schedule,
     vlr_team_stats,
     vlr_team_transactions,
     vlr_upcoming_matches,
@@ -57,8 +59,9 @@ async def get_stats_data(
     map: str = "all",
     min_rounds: int = STATS_MIN_ROUNDS,
     min_rating: float = STATS_MIN_RATING,
+    event_id: str | None = None,
 ) -> dict:
-    return await vlr_stats(region, timespan, map, min_rounds, min_rating)
+    return await vlr_stats(region, timespan, map, min_rounds, min_rating, event_id)
 
 
 async def get_rankings_data(region: str) -> dict:
@@ -137,6 +140,14 @@ async def get_team_transactions_data(team_id: str) -> dict:
 
 async def get_team_stats_data(team_id: str) -> dict:
     return await vlr_team_stats(team_id)
+
+
+async def get_team_roster_data(team_id: str) -> dict:
+    return await vlr_team_roster(team_id)
+
+
+async def get_team_schedule_data(team_id: str) -> dict:
+    return await vlr_team_schedule(team_id)
 
 
 async def get_event_matches_data(event_id: str) -> dict:

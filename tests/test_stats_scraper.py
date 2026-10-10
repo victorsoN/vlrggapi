@@ -421,14 +421,14 @@ async def test_alias_normalizes_before_cache_key(monkeypatch):
     await vlr_stats("na", "60")
 
     # cache entry is keyed on the canonical region, not the alias (and includes
-    # the resolved map_id and default min_rounds/min_rating)
+    # the resolved map_id, default min_rounds/min_rating, and event_id)
     assert cache_manager.get(
         stats_mod.CACHE_TTL_STATS, "stats", "americas", "60", "all",
-        stats_mod.STATS_MIN_ROUNDS, stats_mod.STATS_MIN_RATING,
+        stats_mod.STATS_MIN_ROUNDS, stats_mod.STATS_MIN_RATING, "all",
     ) is not None
     assert cache_manager.get(
         stats_mod.CACHE_TTL_STATS, "stats", "na", "60", "all",
-        stats_mod.STATS_MIN_ROUNDS, stats_mod.STATS_MIN_RATING,
+        stats_mod.STATS_MIN_ROUNDS, stats_mod.STATS_MIN_RATING, "all",
     ) is None
     # the fetched URL carries the canonical region
     data_calls = [c for c in fetch.calls if _region_of(c) is not None]
@@ -614,9 +614,9 @@ async def test_vlr_stats_cache_key_differs_by_map(monkeypatch):
     assert len(data_calls) == 2
     assert cache_manager.get(
         stats_mod.CACHE_TTL_STATS, "stats", "americas", "60", "5",
-        stats_mod.STATS_MIN_ROUNDS, stats_mod.STATS_MIN_RATING,
+        stats_mod.STATS_MIN_ROUNDS, stats_mod.STATS_MIN_RATING, "all",
     ) is not None
     assert cache_manager.get(
         stats_mod.CACHE_TTL_STATS, "stats", "americas", "60", "8",
-        stats_mod.STATS_MIN_ROUNDS, stats_mod.STATS_MIN_RATING,
+        stats_mod.STATS_MIN_ROUNDS, stats_mod.STATS_MIN_RATING, "all",
     ) is not None

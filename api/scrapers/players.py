@@ -189,7 +189,6 @@ def _parse_agent_stats(html: HTMLParser) -> list[dict]:
         if len(cells) < 16:
             continue
 
-        # Agent name
         agent = ""
         img = cells[0].css_first("img")
         if img:
@@ -199,7 +198,6 @@ def _parse_agent_stats(html: HTMLParser) -> list[dict]:
         if not agent:
             continue
 
-        # Use column — split count and percentage
         use_text = cells[1].text(strip=True)
         usage_count = ""
         usage_pct = ""
