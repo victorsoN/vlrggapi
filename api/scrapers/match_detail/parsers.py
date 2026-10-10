@@ -220,8 +220,12 @@ def _parse_player_row_div(player_cell, stat_cells: list) -> dict:
     """Parse a single player from the new ovw-cell div-based layout.
 
     Each player occupies 11 consecutive ``.ovw-cell`` divs: a ``mod-player``
-    cell with name / agent, followed by 10 stat cells keyed by ``data-col``
-    (rating2, acs, kills, kd-diff, kast, adr, hsp, fb, fd, fk-diff).
+    cell with just the name, a ``mod-agents`` cell (agent icon lives here, as
+    a SIBLING of the player cell, not nested inside it), then 9 stat cells
+    keyed by ``data-col`` (rating2, acs, kills, kd-diff, kast, adr, hsp, fb,
+    fd, fk-diff). The ``mod-agents`` cell carries no ``data-col``, so it has
+    to be matched by class like ``mod-kda`` rather than picked up by the
+    data-col loop below.
 
     The ``data-col="kills"`` cell is special: it uses ``.mod-kda`` and
     contains kills / deaths / assists inside ``.ovw-kda-stat`` sub-elements.
@@ -233,6 +237,8 @@ def _parse_player_row_div(player_cell, stat_cells: list) -> dict:
     if name_elem:
         player_name = extract_text_content(name_elem)
 
+    # Fallback for markup where the agent icon is nested in the player cell
+    # itself (older layout) rather than its own sibling ovw-cell.
     agents = player_cell.css_first(".ovw-agents")
     if agents:
         img = agents.css_first("img")
@@ -243,6 +249,11 @@ def _parse_player_row_div(player_cell, stat_cells: list) -> dict:
     kills = deaths = assists = ""
     for cell in stat_cells:
         cls = cell.attributes.get("class", "") or ""
+        if "mod-agents" in cls:
+            img = cell.css_first("img")
+            if img:
+                agent = img.attributes.get("title", "") or img.attributes.get("alt", "") or agent
+            continue
         if "mod-kda" in cls:
             kda_stats = cell.css(".ovw-kda-stat")
             for ks in kda_stats:

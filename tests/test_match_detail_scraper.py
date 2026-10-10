@@ -3,7 +3,7 @@ import asyncio
 import pytest
 
 from api.scrapers.match_detail import vlr_match_detail
-from api.scrapers.match_detail.parsers import _parse_streams_vods
+from api.scrapers.match_detail.parsers import _parse_map_players, _parse_streams_vods
 from utils.cache_manager import cache_manager
 from utils.html_parsers import parse_html
 
@@ -100,6 +100,66 @@ def test_parse_streams_vods_empty_when_match_has_no_watch_module():
 
     assert streams == []
     assert vods == []
+
+
+# Current (2026 redesign) overview table: each player is a flat run of
+# `.ovw-cell` divs. The agent icon is its OWN sibling cell (`mod-agents`),
+# not nested inside the `mod-player` name cell — a layout the parser missed
+# for a while, silently reporting every agent as "".
+OVW_ROW_HTML = """
+<html>
+  <div class="vm-stats-game" data-game-id="game-1">
+    <div class="ovw-table">
+      <div class="ovw-row">
+        <div class="ovw-cell mod-player"><div class="ovw-player-name text-of">brawk</div></div>
+        <div class="ovw-cell mod-agents"><div class="ovw-agents"><img src="/img/vlr/game/agents/vyse.png" alt="vyse" title="Vyse"></div></div>
+        <div class="ovw-cell" data-col="rating2"><span class="side mod-both">1.35</span></div>
+        <div class="ovw-cell" data-col="acs"><span class="side mod-both">234</span></div>
+        <div class="ovw-cell mod-kda">
+          <span class="ovw-kda-stat" data-col="kills"><span class="side mod-both">18</span></span>
+          <span class="ovw-kda-stat" data-col="deaths"><span class="side mod-both">12</span></span>
+          <span class="ovw-kda-stat" data-col="assists"><span class="side mod-both">6</span></span>
+        </div>
+        <div class="ovw-cell" data-col="kd-diff"><span class="side mod-both">+6</span></div>
+        <div class="ovw-cell" data-col="kast"><span class="side mod-both">83%</span></div>
+        <div class="ovw-cell" data-col="adr"><span class="side mod-both">148</span></div>
+        <div class="ovw-cell" data-col="hsp"><span class="side mod-both">15%</span></div>
+        <div class="ovw-cell" data-col="fb"><span class="side mod-both">3</span></div>
+        <div class="ovw-cell" data-col="fd"><span class="side mod-both">1</span></div>
+      </div>
+      <div class="ovw-row">
+        <div class="ovw-cell mod-player"><div class="ovw-player-name text-of">BuZz</div></div>
+        <div class="ovw-cell mod-agents"><div class="ovw-agents"><img src="/img/vlr/game/agents/omen.png" alt="omen" title="Omen"></div></div>
+        <div class="ovw-cell" data-col="rating2"><span class="side mod-both">0.98</span></div>
+        <div class="ovw-cell" data-col="acs"><span class="side mod-both">211</span></div>
+        <div class="ovw-cell mod-kda">
+          <span class="ovw-kda-stat" data-col="kills"><span class="side mod-both">17</span></span>
+          <span class="ovw-kda-stat" data-col="deaths"><span class="side mod-both">15</span></span>
+          <span class="ovw-kda-stat" data-col="assists"><span class="side mod-both">7</span></span>
+        </div>
+        <div class="ovw-cell" data-col="kd-diff"><span class="side mod-both">+2</span></div>
+        <div class="ovw-cell" data-col="kast"><span class="side mod-both">79%</span></div>
+        <div class="ovw-cell" data-col="adr"><span class="side mod-both">127</span></div>
+        <div class="ovw-cell" data-col="hsp"><span class="side mod-both">27%</span></div>
+        <div class="ovw-cell" data-col="fb"><span class="side mod-both">5</span></div>
+        <div class="ovw-cell" data-col="fd"><span class="side mod-both">3</span></div>
+      </div>
+    </div>
+  </div>
+</html>
+"""
+
+
+def test_parse_map_players_reads_agent_from_sibling_mod_agents_cell():
+    game_elem = parse_html(OVW_ROW_HTML).css_first(".vm-stats-game")
+
+    players = _parse_map_players(game_elem)
+
+    assert [p["name"] for p in players["team1"]] == ["brawk"]
+    assert [p["agent"] for p in players["team1"]] == ["Vyse"]
+    assert [p["name"] for p in players["team2"]] == ["BuZz"]
+    assert [p["agent"] for p in players["team2"]] == ["Omen"]
+
 
 PLAYER_ROW = """
 <tr>
